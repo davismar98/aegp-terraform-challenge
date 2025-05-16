@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
 
 vars:
-  stage: staging
+  stage: prod
 
 import:
   - catalog/hello-world
@@ -11,6 +11,6 @@ components:
     hello-world:
       vars:
         location: eastus
-        vnet_address_space:  ["10.1.0.0/16"]
-        instance_count: 2
-        vm_sku: Standard_B2s
+        vnet_address_space:  ["10.0.0.0/16"]
+        instance_count: 10
+        vm_sku: Standard_B12ms

@@ -28,23 +28,22 @@ module "network" {
     }
   }
 
-  tags       = var.common_tags # From component's variables
+  tags       = var.common_tags
   depends_on = [azurerm_resource_group.main]
 }
 
 module "security" {
-  source = "./modules/security" # Path to your security module
+  source = "./modules/security"
 
-  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}" # From component's variables
-  location            = var.location            # From component's variables
-  tags                = var.common_tags         # From component's variables
+  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}"
+  location            = var.location
+  tags                = var.common_tags
 
-  # Pass the subnets data from the network module
   subnets_data = module.network.subnets
 
   network_security_groups = {
-    "web_nsg" = {                   # Logical name for this NSG
-      name = "nsg-${var.stage}-web" # Actual Azure name
+    "web_nsg" = {
+      name = "nsg-${var.stage}-web"
       rules = [
         {
           name                       = "AllowLBtoAppOn8080"
@@ -53,9 +52,9 @@ module "security" {
           access                     = "Allow"
           protocol                   = "Tcp"
           source_port_range          = "*"
-          destination_port_range     = "8080"              # Your application port
-          source_address_prefix      = "AzureLoadBalancer" # Service Tag for Azure LB
-          destination_address_prefix = "*"                 # Or module.network.subnets["backend"].address_prefixes[0]
+          destination_port_range     = "8080"
+          source_address_prefix      = "AzureLoadBalancer"
+          destination_address_prefix = "*"
           description                = "Allow traffic from Azure Load Balancer to App tier on port 8080"
         }
       ]
@@ -68,14 +67,13 @@ module "security" {
           priority                   = 100
           direction                  = "Inbound"
           access                     = "Allow"
-          protocol                   = "Tcp" # Or specific app protocol
+          protocol                   = "Tcp"
           source_port_range          = "*"
-          destination_port_range     = "8080"                                                 # Example app port
-          source_address_prefix      = module.network.subnets["frontend"].address_prefixes[0] # Assuming "frontend" is the logical key for your web subnet
+          destination_port_range     = "8080"
+          source_address_prefix      = module.network.subnets["frontend"].address_prefixes[0]
           destination_address_prefix = "*"
           description                = "Allow traffic from Web Subnet to App tier on port 8080"
         }
-        # Potentially allow outbound to database subnet or specific Azure services
       ]
     },
     "db_nsg" = {
@@ -89,9 +87,7 @@ module "security" {
           protocol               = "Tcp"
           source_port_range      = "*"
           destination_port_range = "1433" # MS SQL Port
-          # Use the address prefix of the app subnet.
-          # This requires knowing the logical name used in module.network.subnets output
-          source_address_prefix      = module.network.subnets["backend"].address_prefixes[0] # Assuming "backend" is the logical key for your app subnet
+          source_address_prefix      = module.network.subnets["backend"].address_prefixes[0]
           destination_address_prefix = "*"
           description                = "Allow SQL traffic from App Subnet"
         }
@@ -109,56 +105,53 @@ module "security" {
 }
 
 module "load_balancer" {
-  source = "./modules/load_balancer" # Path to your load_balancer module
+  source = "./modules/load_balancer"
 
-  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}" # From component's variables
-  location            = var.location            # From component's variables
-  tags                = var.common_tags         # From component's variables
+  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}"
+  location            = var.location
+  tags                = var.common_tags
 
   load_balancer_name = "lb-${var.stage}-helloworld"
   public_ip_name     = "pip-${var.stage}-helloworld-lb"
-  public_ip_sku      = "Standard" # Recommended
-  lb_sku             = "Standard" # Recommended
+  public_ip_sku      = "Standard"
+  lb_sku             = "Standard"
   public_ip_zones    = ["1", "2", "3"]
 
   # Frontend port exposed to the internet
-  lb_frontend_port = 80 # For HTTP access
+  lb_frontend_port = 80 
 
   # Backend port your application listens on (VMs)
   lb_backend_port = var.app_port
 
   # Health Probe configuration
-  health_probe_port     = var.app_port # Probe the same port the app listens on
-  health_probe_protocol = "Tcp"        # TCP is simplest if app doesn't have a dedicated /health endpoint
+  health_probe_port     = var.app_port
+  health_probe_protocol = "Tcp"
 
   depends_on = [azurerm_resource_group.main]
 }
 
 module "compute" {
-  source = "./modules/compute" # Path to your compute module
+  source = "./modules/compute"
 
-  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}" # From component's variables
-  location            = var.location            # From component's variables
-  tags                = var.common_tags         # From component's variables
+  resource_group_name = "${var.resource_group_name_prefix}-${var.stage}"
+  location            = var.location
+  tags                = var.common_tags
 
   vmss_name          = "vmss-${var.stage}-helloworld"
-  subnet_id          = module.network.subnets["frontend"].id # Assuming "frontend" is your web subnet
+  subnet_id          = module.network.subnets["frontend"].id
   lb_backend_pool_id = module.load_balancer.backend_address_pool_id
-  health_probe_id    = module.load_balancer.health_probe_id # Use LB's health probe for VMSS health
+  health_probe_id    = module.load_balancer.health_probe_id
 
-  instance_count = 2              # Initial count, will be managed by autoscale if enabled
-  vm_sku         = "Standard_B1s" # Or your preferred SKU
+  instance_count = var.instance_count          
+  vm_sku         = var.vm_sku
 
   admin_username            = "azureuser"
-  admin_ssh_key_public_data = var.admin_ssh_key_public # Pass your public SSH key
-  # If not using SSH keys (not recommended for prod):
-  # admin_password = var.vm_admin_password # Ensure this var is defined and sensitive
+  admin_ssh_key_public_data = var.admin_ssh_key_public
 
-  # Autoscaling settings (can be customized via component variables)
   autoscaling_enabled     = true
-  autoscale_min_count     = 1
-  autoscale_max_count     = 3
-  autoscale_default_count = 2
+  autoscale_min_count     = var.instance_count
+  autoscale_max_count     = var.instance_count * 2
+  autoscale_default_count = var.instance_count
 
   availability_zones = null # ["1", "2", "3"] # null = zone-redundant
 

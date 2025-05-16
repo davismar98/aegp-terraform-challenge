@@ -30,6 +30,18 @@ variable "common_tags" {
   }
 }
 
+variable "instance_count" {
+  type        = number
+  description = "Number of instances to create for the app service."
+  default     = 1
+}
+
+variable "vm_sku" {
+  type        = string
+  description = "The SKU for the VM instances."
+  default     = "Standard_B1s"
+}
+
 variable "app_port" {
   type        = number
   description = "value of the port your Hello World app runs on"

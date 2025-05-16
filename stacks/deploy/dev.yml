@@ -12,3 +12,5 @@ components:
       vars:
         location: eastus
         vnet_address_space:  ["10.100.0.0/22"]
+        instance_count: 1
+        vm_sku: Standard_B1s
