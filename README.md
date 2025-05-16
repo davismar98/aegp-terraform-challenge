@@ -8,7 +8,11 @@ Deployment of a Hello-World application on Azure using Terraform and Atmos.
   - [Terraform Modules Overview](#terraform-modules-overview)
   - [Module Breakdown](#module-breakdown)
   - [File Structure](#file-structure)
-- [Running with Atmos (Example)](#running-with-atmos-example)
+
+- [Azure provider authentication](#azure-provider-authentication)
+- [Running with Atmos](#running-with-atmos)
+- [Development stack architecture](#development-stack-architecture)
+- [Results](#results)
 
 
 ## The hello-world Terraform Component
@@ -85,11 +89,60 @@ hello-world/
 │       ├── main.tf
 │       ├── variables.tf
 │       └── outputs.tf
-└── README.md               # This file
+└── README.md               # The README for the Terraform component
 ```
 
-## Running with Atmos (Example)
+## Azure provider authentication
 
-While you can run this Terraform component directly using `terraform apply -var-file="dev.tfvars"`, in this case I am using Atmos to manage configurations across multiple environments and stacks.
+For this challenge I'm using a Service Principal with a Client Secret to authenticate witht he Azure Provider, by setting the following variables:
 
-(WIP)
+        export ARM_CLIENT_ID="00000000-0000-0000-0000-000000000000"
+        export ARM_CLIENT_SECRET="12345678-0000-0000-0000-000000000000"
+        export ARM_TENANT_ID="10000000-0000-0000-0000-000000000000"
+        export ARM_SUBSCRIPTION_ID="20000000-0000-0000-0000-000000000000"
+
+## Running with Atmos
+
+While it is possible to run this Terraform component directly using `terraform apply -var-file="dev.tfvars"`, in this case I am using Atmos to manage configurations across multiple environments and stacks.
+
+The atmos configuration is as follows
+
+```
+├── atmos.yml
+├── components/
+│   └── terraform/
+│       └── hello-world/
+│   # Centralized stacks configuration
+└── stacks/
+    ├── catalog/
+    │   └── hello-world.yml
+    └── deploy/
+        ├── dev.yml
+        ├── prod.yml
+        └── staging.yml
+```
+
+Under `stacks/catalog/hello-world.yml` there is the baseline definition for the hello-world app. Environment-specific configurations are placed under `stacks/deploy/<env>.yml`.
+
+First, make sure you have atmos installed in your system. For Mac, run
+
+        brew install atmos
+
+Then, to deploy the development stack, run the following command
+
+        atmos terraform apply hello-world -s dev
+
+To destroy the stack, run
+
+        atmos terraform destroy hello-world -s dev
+
+## Development stack architecture
+
+This simple setup only uses the web subnet to deploy a basic webserver running a hello-world page, with info about the host that resolves the request.
+
+![hello-world azure architecture](images/hello-world-azure-dev.png)
+
+
+## Results
+
+![hello-world running](images/hello-world.png)
