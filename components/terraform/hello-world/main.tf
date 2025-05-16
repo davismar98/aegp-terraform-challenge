@@ -32,15 +32,6 @@ module "network" {
   depends_on = [azurerm_resource_group.main]
 }
 
-# In components/terraform/hello-world-app/main.tf
-
-# (Assuming module.network is already defined as in the previous example)
-
-# Example variables you would define in the component's variables.tf for NSGs
-# variable "web_nsg_rules" { type = list(object(...)) }
-# variable "app_nsg_rules" { type = list(object(...)) }
-# variable "db_nsg_rules"  { type = list(object(...)) }
-
 module "security" {
   source = "./modules/security" # Path to your security module
 
@@ -108,11 +99,6 @@ module "security" {
     }
   }
 
-  # Define which NSG to associate with which logical subnet
-  # The keys here ("frontend", "backend", "database") must match the keys
-  # used when defining subnets in the network module.
-  # The values ("web_nsg", "app_nsg", "db_nsg") must match the keys
-  # used in the network_security_groups map above.
   subnet_nsg_associations = {
     "frontend" = "web_nsg" # Associate the 'frontend' subnet with 'web_nsg'
     "backend"  = "app_nsg" # Associate the 'backend' subnet with 'app_nsg'
@@ -144,10 +130,7 @@ module "load_balancer" {
   # Health Probe configuration
   health_probe_port     = var.app_port # Probe the same port the app listens on
   health_probe_protocol = "Tcp"        # TCP is simplest if app doesn't have a dedicated /health endpoint
-  # If using "Http" or "Https" for health_probe_protocol, set health_probe_request_path:
-  # health_probe_request_path = "/" # Or your specific health check path
 
-  # You can customize other LB settings via variables if needed
   depends_on = [azurerm_resource_group.main]
 }
 
