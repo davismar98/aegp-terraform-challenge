@@ -1,8 +1,17 @@
 # aegp-terraform-challenge
 
-Deployment of a Hello-World application using Terraform and Atmos. 
+Deployment of a Hello-World application on Azure using Terraform and Atmos. 
 
-# The hello-world Terraform Component
+## Table of Contents
+
+- [The hello-world Terraform Component](#the-hello-world-terraform-component)
+  - [Terraform Modules Overview](#terraform-modules-overview)
+  - [Module Breakdown](#module-breakdown)
+  - [File Structure](#file-structure)
+- [Running with Atmos (Example)](#running-with-atmos-example)
+
+
+## The hello-world Terraform Component
 
 This Terraform component deploys a "Hello World" application infrastructure on Azure. It includes a Virtual Network (VNet), subnets, Network Security Groups (NSGs), a Load Balancer, and a Virtual Machine Scale Set (VMSS) to host the application.
 
